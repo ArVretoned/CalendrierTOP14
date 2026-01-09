@@ -34,7 +34,7 @@ def get_data(env_var):
           parts = day.split(" ", 1)[1]+f" {env_var['SAISON'].split('-')[0]}"
           dt = datetime.strptime(parts, "%d %B %Y")
           if dt.month < 8:
-            dt = dt.replace(year=2026)
+            dt = dt.replace(year=int(env_var['SAISON'].split('-')[1]))
           if dt < datetime.today():
             passed = True
         if passed == False:
@@ -45,6 +45,8 @@ def get_data(env_var):
               hour = div.find("div", class_="match-line__broadcast-infos").find("p", class_="match-line__time").text.replace('\n','').rstrip().lstrip()
               parts = day.split(" ", 1)[1] + f" {env_var['SAISON'].split('-')[0]} " + hour
               dt = pytz.timezone('Europe/Paris').localize(datetime.strptime(parts, "%d %B %Y %Hh%M"))
+              if dt.month < 8:
+                dt = dt.replace(year=int(env_var['SAISON'].split('-')[1]))
               str_start = dt.strftime("%Y-%m-%d %H:%M:%S%z")
               str_end = (dt+timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S%z")
               ret.append((team1,team2,str_start,str_end))
@@ -122,7 +124,7 @@ def add_oline_calendar(data,env_var):
       str_end = evt[3]
       summary=team1 + " vs " + team2
       if summary not in games_already_in_cal:
-        calendar.save_event(
+        ret = calendar.save_event(
           dtstart=datetime.strptime(str_start,"%Y-%m-%d %H:%M:%S%z"),
           dtend=datetime.strptime(str_end,"%Y-%m-%d %H:%M:%S%z"),
           summary=summary)
