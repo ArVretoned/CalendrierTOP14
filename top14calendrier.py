@@ -124,7 +124,7 @@ def add_oline_calendar(data,env_var):
       str_end = evt[3]
       summary=team1 + " vs " + team2
       if summary not in games_already_in_cal:
-        ret = calendar.save_event(
+        calendar.save_event(
           dtstart=datetime.strptime(str_start,"%Y-%m-%d %H:%M:%S%z"),
           dtend=datetime.strptime(str_end,"%Y-%m-%d %H:%M:%S%z"),
           summary=summary)
