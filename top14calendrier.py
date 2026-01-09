@@ -152,7 +152,7 @@ def main(**kwargs):
         kwargs["local"] = True
     data = get_data(env_var)
     if kwargs.get("local", False):
-      write_local_calendar(data,env_var)
+      write_local_calendar(data)
     if kwargs.get("enligne", False):
       add_oline_calendar(data,env_var)
   except Exception as e:
