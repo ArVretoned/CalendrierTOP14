@@ -18,6 +18,7 @@ if os.name == "nt":
 
 def get_data(env_var):
   ret = []
+  tz = pytz.timezone("Europe/Paris")
   print("Récupération des matchs")
   for page_number in range(1,27):
     print(f"  |--> Journée {page_number:02d} ...", end=' ')
@@ -44,12 +45,11 @@ def get_data(env_var):
               team2 = div.find_all("div", class_="club-line club-line--table-format")[0].find_all("a")[0].text.replace('\n','').rstrip().lstrip()
               hour = div.find("div", class_="match-line__broadcast-infos").find("p", class_="match-line__time").text.replace('\n','').rstrip().lstrip()
               parts = day.split(" ", 1)[1] + f" {env_var['SAISON'].split('-')[0]} " + hour
-              dt = pytz.timezone('Europe/Paris').localize(datetime.strptime(parts, "%d %B %Y %Hh%M"))
-              if dt.month < 8:
-                dt = dt.replace(year=int(env_var['SAISON'].split('-')[1]))
-              str_start = dt.strftime("%Y-%m-%d %H:%M:%S%z")
-              str_end = (dt+timedelta(hours=2)).strftime("%Y-%m-%d %H:%M:%S%z")
-              ret.append((team1,team2,str_start,str_end))
+              start_date = tz.localize(datetime.strptime(parts, "%d %B %Y %Hh%M"))
+              if start_date.month < 8:
+                start_date = start_date.replace(year=int(env_var['SAISON'].split('-')[1]))
+              end_date = start_date+timedelta(hours=2)
+              ret.append((team1,team2,start_date,end_date))
       print('matchs récupérés') if passed == False else print("journée passée")
     except:
       print('heures des matchs pas encore publiées')
@@ -62,12 +62,12 @@ def write_local_calendar(elt):
     for evt in elt:
       team1 = evt[0]
       team2 = evt[1]
-      str_start = evt[2]
-      str_end = evt[3]
+      start_date = evt[2]
+      end_date = evt[3]
       e = ics.Event()
       e.name = team1 + " vs " + team2
-      e.begin = str_start
-      e.end = str_end
+      e.begin = start_date.strftime("%Y-%m-%d %H:%M:%S%z")
+      e.end = end_date.strftime("%Y-%m-%d %H:%M:%S%z")
       c.events.add(e)
     print('OK')
   except:
@@ -77,6 +77,8 @@ def write_local_calendar(elt):
     print('Ecriture du calendrier ...',end=' ')
     root = Tk()
     root.withdraw()
+    root.attributes('-topmost', True)
+    root.update()
     filespath = filedialog.asksaveasfilename(title="Enregistrer le fichier",initialfile="top14.ics")
     with open(filespath, 'w', encoding='utf-8', newline='') as my_file:
       my_file.writelines(c.serialize_iter(),)
@@ -106,7 +108,14 @@ def add_oline_calendar(data,env_var):
     print("Récupération des matchs déjà dans le calendrier ...", end=' ')
     games_already_in_cal = []
     for elt in calendar.search():
-      events = Event.from_ical(elt.data)
+      try:
+        events = Event.from_ical(elt.data)
+      except:
+        if "TZID=\"UTC+02:00\"" in elt.data:
+          clean_data = elt.data.replace("TZID=\"UTC+02:00\"", "TZID=\"Europe/Paris\"")
+        if  "TZID=\"UTC+01:00\"" in elt.data:
+          clean_data = elt.data.replace("TZID=\"UTC+01:00\"", "TZID=\"Europe/Paris\"")
+        events = Event.from_ical(clean_data)
       for component in events.walk():
         if component.name == "VEVENT":
             games_already_in_cal.append(str(component['SUMMARY']))  
@@ -120,13 +129,13 @@ def add_oline_calendar(data,env_var):
     for evt in data:
       team1 = evt[0]
       team2 = evt[1]
-      str_start = evt[2]
-      str_end = evt[3]
+      start_date = evt[2]
+      end_date = evt[3]
       summary=team1 + " vs " + team2
       if summary not in games_already_in_cal:
         calendar.save_event(
-          dtstart=datetime.strptime(str_start,"%Y-%m-%d %H:%M:%S%z"),
-          dtend=datetime.strptime(str_end,"%Y-%m-%d %H:%M:%S%z"),
+          dtstart=start_date,
+          dtend=end_date,
           summary=summary)
         new_game_cpt+=1
     print(f"OK, {new_game_cpt} match(s) ajouté(s)")
