@@ -57,7 +57,7 @@ def get_data(env_var):
 
 def write_local_calendar(elt):
   try:
-    print('Construction du clendrier ...',end=' ')
+    print('Construction du calendrier ...',end=' ')
     c = ics.Calendar()
     for evt in elt:
       team1 = evt[0]
@@ -118,7 +118,7 @@ def add_oline_calendar(data,env_var):
         events = Event.from_ical(clean_data)
       for component in events.walk():
         if component.name == "VEVENT":
-            games_already_in_cal.append(str(component['SUMMARY']))  
+          games_already_in_cal.append((str(component['SUMMARY']),component['DTSTART'].dt))  
     print('OK')
   except:
     print('KO')
@@ -132,7 +132,7 @@ def add_oline_calendar(data,env_var):
       start_date = evt[2]
       end_date = evt[3]
       summary=team1 + " vs " + team2
-      if summary not in games_already_in_cal:
+      if (summary,start_date) not in games_already_in_cal:
         calendar.save_event(
           dtstart=start_date,
           dtend=end_date,
@@ -160,7 +160,7 @@ def main(**kwargs):
       args = parser.parse_args()
       kwargs = vars(args)
       if not any(kwargs.values()): # Toutes les valeurs sont False, None ou absentes.
-        kwargs["local"] = True
+        kwargs["enligne"] = True
     data = get_data(env_var)
     if kwargs.get("local", False):
       write_local_calendar(data)
